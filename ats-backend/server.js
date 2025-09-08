@@ -235,13 +235,14 @@ app.get('/api/resumes/:id', authMiddleware(['HR']), async (req, res) => {
 
 
 // ---- Boot: connect THEN listen (prevents buffering timeouts) ----
+// ---- Boot: connect THEN listen (prevents buffering timeouts) ----
 (async () => {
     try {
         if (!MONGO_URI) throw new Error('MONGO_URI / MONGODB_URI not set');
 
         await mongoose.connect(MONGO_URI, {
             serverSelectionTimeoutMS: 15000,
-            connectTimeoutMS: 15000
+            connectTimeoutMS: 15000,
         });
 
         console.log('✅ MongoDB connected');

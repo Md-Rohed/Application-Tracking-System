@@ -10,11 +10,14 @@ const path = require('path');
 dotenv.config();
 
 const app = express();
-app.use(cors());
+const PORT = process.env.PORT || 5000;              // ✅ use Render's PORT
+const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI; // ✅ accept either name
+const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || '*';
+app.use(cors({ origin: ALLOWED_ORIGIN, credentials: true }));
 app.use(express.json());
 
 // MongoDB Connection
-mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
     .then(() => console.log('MongoDB connected'))
     .catch(err => console.error('MongoDB connection error:', err));
 
@@ -233,4 +236,21 @@ app.get('/api/resumes/:id', authMiddleware(['HR']), async (req, res) => {
     }
 });
 
-app.listen(5000, () => console.log('Server running on port 5000'));
+
+// ---- Boot: connect THEN listen (prevents buffering timeouts) ----
+(async () => {
+    try {
+        if (!MONGO_URI) throw new Error('MONGO_URI / MONGODB_URI not set');
+
+        await mongoose.connect(MONGO_URI, {
+            serverSelectionTimeoutMS: 15000,
+            connectTimeoutMS: 15000
+        });
+
+        console.log('✅ MongoDB connected');
+        app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+    } catch (err) {
+        console.error('❌ Failed to start server:', err);
+        // Optional: process.exit(1);
+    }
+})();

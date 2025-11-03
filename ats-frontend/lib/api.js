@@ -19,6 +19,7 @@ export const login = (data) => api.post('/api/auth/login', data).then(res => res
 export const getJobs = () => api.get('/api/jobs').then(res => res.data);
 export const getJobsById = (id) => api.get(`/api/jobs/${id}`).then(res => res.data);
 export const createJob = (data) => api.post('/api/jobs', data).then(res => res.data);
+export const updateJob = (id, data) => api.put(`/api/jobs/${id}`, data).then((res) => res.data);
 export const applyForJob = (data, config) => api.post('/api/applications', data, config).then(res => res.data);
 export const getApplications = () => api.get('/api/applications').then(res => res.data);
 export const updateApplicationStatus = (id, status) => api.patch(`/api/applications/${id}`, { status }).then(res => res.data);

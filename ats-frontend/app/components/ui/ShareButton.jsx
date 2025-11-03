@@ -77,14 +77,14 @@ export default function ShareButtons({ jobId, title = "Job" }) {
                 >
                     Share…
                 </button>
-                <button
+                {/* <button
                     type="button"
                     onClick={() => setOpen(true)}
                     className="rounded-lg bg-indigo-600/20 px-3 py-1.5 text-xs text-indigo-200 hover:bg-indigo-600/30 transition"
                     title="Show QR"
                 >
                     QR Code
-                </button>
+                </button> */}
             </div>
 
             {/* Modal */}

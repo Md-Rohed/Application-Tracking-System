@@ -16,8 +16,6 @@ const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || '*';
 app.use(cors({ origin: ALLOWED_ORIGIN, credentials: true }));
 app.use(express.json());
 
-
-
 // Multer for Resume Upload
 const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, 'uploads/'),
@@ -60,7 +58,7 @@ const applicationSchema = new mongoose.Schema({
     resume: { filePath: String, parsedData: Object },
     status: { type: String, enum: ['Applied', 'Shortlisted', 'Rejected'], default: 'Applied' },
     formData: Object,
-    matchPercentage: { type: Number, default: 0 } // Added matchPercentage field
+    matchPercentage: { type: Number, default: 0 },// Added matchPercentage field,
 });
 const Application = mongoose.model('Application', applicationSchema);
 
@@ -122,14 +120,29 @@ app.post('/api/jobs', authMiddleware(['HR']), async (req, res) => {
     }
 });
 
-//Put Job (HR only)
-
-app.put('/api/jobs', authMiddleware(['HR']), async (req, res) => {
-    const { title, description, location, keywords } = req.body;
+// Edit Job (HR only)
+app.put('/api/jobs/:id', authMiddleware(['HR']), async (req, res) => {
+    const { title, description, location, keywords, status } = req.body;
     try {
-        const job = new Job({ title, description, location, keywords: keywords || [], createdBy: req.user.id });
-        await job.save();
-        res.status(201).json(job);
+        const job = await Job.findById(req.params.id);
+        if (!job) {
+            return res.status(404).json({ error: 'Job not found' });
+        }
+        if (job.createdBy.toString() !== req.user.id) {
+            return res.status(403).json({ error: 'Not authorized to edit this job' });
+        }
+        const updatedJob = await Job.findByIdAndUpdate(
+            req.params.id,
+            {
+                title: title || job.title,
+                description: description || job.description,
+                location: location || job.location,
+                keywords: keywords || job.keywords,
+                status: status || job.status
+            },
+            // { new: true }
+        );
+        res.json(updatedJob);
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
@@ -145,7 +158,7 @@ app.get('/api/jobs', async (req, res) => {
     }
 });
 
-// Get Job by ID (Public)
+// Get Job by ID (Public) - This can be used for job details to pre-fill the edit form
 app.get('/api/jobs/:id', async (req, res) => {
     try {
         const job = await Job.findById(req.params.id);
@@ -156,7 +169,9 @@ app.get('/api/jobs/:id', async (req, res) => {
     }
 });
 
-// Apply for Job (Applicant only)
+const natural = require('natural'); // NLP library
+const stringSimilarity = require('string-similarity'); // optional
+
 app.post('/api/applications', authMiddleware(['Applicant']), upload.single('resume'), async (req, res) => {
     const { jobId, formData } = req.body;
     try {
@@ -171,13 +186,26 @@ app.post('/api/applications', authMiddleware(['Applicant']), upload.single('resu
         const pdfData = await pdfParse(pdfBuffer);
         const resumeText = pdfData.text.toLowerCase();
 
+        // Tokenize resume text into words
+        const tokenizer = new natural.WordTokenizer();
+        const tokens = tokenizer.tokenize(resumeText);
+
         const keywords = job.keywords.map(k => k.toLowerCase());
         let matchCount = 0;
+
+        // More flexible matching
         keywords.forEach(keyword => {
-            if (resumeText.includes(keyword)) {
+            // Exact or partial match
+            const exactMatch = tokens.includes(keyword);
+
+            // Loose similarity (for React vs ReactJS, Node vs Node.js)
+            const similar = tokens.some(word => stringSimilarity.compareTwoStrings(word, keyword) > 0.7);
+
+            if (exactMatch || similar) {
                 matchCount++;
             }
         });
+
         const matchPercentage = keywords.length > 0 ? (matchCount / keywords.length) * 100 : 0;
 
         const application = new Application({
@@ -185,14 +213,16 @@ app.post('/api/applications', authMiddleware(['Applicant']), upload.single('resu
             applicantId: req.user.id,
             resume: { filePath: req.file.path, parsedData: {} },
             formData: JSON.parse(formData),
-            matchPercentage
+            matchPercentage,
         });
         await application.save();
+
         res.status(201).json({ message: 'Application submitted', application });
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
 });
+
 
 // Get Applications (HR only)
 app.get('/api/applications', authMiddleware(['HR']), async (req, res) => {
@@ -233,8 +263,6 @@ app.get('/api/resumes/:id', authMiddleware(['HR']), async (req, res) => {
     }
 });
 
-
-// ---- Boot: connect THEN listen (prevents buffering timeouts) ----
 // ---- Boot: connect THEN listen (prevents buffering timeouts) ----
 (async () => {
     try {

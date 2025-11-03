@@ -96,7 +96,7 @@ export default function JobCard({ job }) {
                         <ShareButtons jobId={_id} title={title} /> {/* NEW */}
 
                         <button
-                            onClick={() => router.push("/hr/dashboard?mode=update")}
+                            onClick={() => router.push(`/hr/dashboard?jobid=${_id}&mode=update`)}
                             className="text-sm text-indigo-300 hover:text-indigo-400 transition"
                         >
                             Edit

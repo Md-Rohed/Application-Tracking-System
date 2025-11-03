@@ -1,23 +1,12 @@
-
-
 "use client";
-import { useQuery } from "@tanstack/react-query";
-import { getJobs } from "@/lib/api";
 import { getRole } from "@/lib/auth";
 import ApplyForm from "./ApplyForm";
 import BriefcaseIcon from "./icon/BriefcaseIcon";
 import LocationIcon from "./icon/LocationIcon";
 import Loader from "./icon/Loader";
 
-
-export default function JobDetails({ jobId }) {
+export default function JobDetails({ job, isLoading, error, jobId }) {
     const role = getRole();
-
-    const { data: job, isLoading, error } = useQuery({
-        queryKey: ["job", jobId],
-        queryFn: () => getJobs(jobId),
-        enabled: !!jobId,
-    });
 
     if (isLoading) {
         return (
@@ -53,34 +42,27 @@ export default function JobDetails({ jobId }) {
                                 <h1 className="text-2xl sm:text-3xl font-semibold text-white tracking-tight">{job.title}</h1>
                                 <div className="mt-2 flex flex-wrap items-center gap-3 text-slate-300">
                                     <span className="inline-flex items-center gap-2">
-                                        <BriefcaseIcon className="h-5 w-5 text-slate-400" />
-                                        <span className="text-slate-200 font-medium">{job.company || "Company"}</span>
-                                    </span>
-                                    <span className="inline-flex items-center gap-2">
                                         <LocationIcon className="h-5 w-5 text-slate-400" />
                                         <span>{job.location}</span>
                                     </span>
-                                    {job.type && (
+                                    {job.status && (
                                         <span className="inline-flex items-center rounded-full bg-indigo-600/20 text-indigo-300 text-xs font-medium px-3 py-1">
-                                            {job.type}
+                                            {job.status}
                                         </span>
                                     )}
                                 </div>
                             </div>
-                            {job.salary && (
-                                <div className="text-right text-indigo-300 font-semibold">{job.salary}</div>
-                            )}
                         </div>
 
-                        {job.skills?.length > 0 && (
+                        {/* {job.keywords?.length > 0 && (
                             <div className="mt-4 flex flex-wrap gap-2">
-                                {job.skills.map((s, i) => (
-                                    <span key={`${s}-${i}`} className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-slate-200">
-                                        {s}
+                                {job.keywords.map((keyword, i) => (
+                                    <span key={`${keyword}-${i}`} className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-slate-200">
+                                        {keyword}
                                     </span>
                                 ))}
                             </div>
-                        )}
+                        )} */}
 
                         <div className="mt-5 text-slate-200 leading-7 whitespace-pre-line">{job.description}</div>
                     </div>
@@ -109,13 +91,3 @@ export default function JobDetails({ jobId }) {
         </div>
     );
 }
-
-
-
-
-
-
-
-
-
-
